@@ -195,7 +195,7 @@ export function VaultProfile() {
       <MiddleSection onNavigateTab={setRiskTab} vaultId={vault.id} />
 
       {/* Risk engine block */}
-      <RiskEngine activeTab={riskTab} onTabChange={setRiskTab} vaultId={vault.id} />
+      <RiskEngine activeTab={riskTab} onTabChange={setRiskTab} vaultId={vault.id} tvlUsd={tvlUsd} />
     </div>
   );
 }
@@ -268,14 +268,14 @@ function MiddleSection({ onNavigateTab, vaultId }: { onNavigateTab: (tab: number
   const visibleEvents = events.slice(eventsPage * pageSize, (eventsPage + 1) * pageSize);
 
   // Tweets with live generation
-  const [tweets, setTweets] = useState(() => TWEET_POOL.slice(0, 4));
-  const tweetIdx = useRef(4);
+  const [tweets, setTweets] = useState(() => TWEET_POOL.slice(0, 3));
+  const tweetIdx = useRef(3);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const next = TWEET_POOL[tweetIdx.current % TWEET_POOL.length];
       tweetIdx.current++;
-      setTweets(prev => [next, ...prev.slice(0, 3)]);
+      setTweets(prev => [next, ...prev.slice(0, 2)]);
     }, 40000);
     return () => clearInterval(interval);
   }, []);
@@ -345,9 +345,10 @@ function MiddleSection({ onNavigateTab, vaultId }: { onNavigateTab: (tab: number
             <button className="events-fullscreen" title="NAV administration" onClick={() => { onNavigateTab(2); scrollToRiskEngine(); }}><ExpandIcon /></button>
           </div>
           {vaultId === 'earn-eth-lido-mellow' ? (
-            <div className="score-card-row"><span className="score-card-label">Lambda NAV</span><span className="score-card-value score-green">A+</span></div>
+            <StatusTimeline label="Lambda NAV" current="A+" currentColor="#34D399"
+              segments={generateTimeline('A+', [{ score: 'A', date: 'Jan 5, 2026', color: 'yellow' }, { score: 'A+', date: 'Feb 1, 2026', color: 'green' }])} />
           ) : (
-            <div className="score-card-row"><span className="score-card-label">&mdash;</span><span className="score-card-value" /></div>
+            <StatusTimeline label="—" current="—" segments={generateTimeline('—')} />
           )}
         </div>
         <div className="score-card">
@@ -356,13 +357,16 @@ function MiddleSection({ onNavigateTab, vaultId }: { onNavigateTab: (tab: number
             <button className="events-fullscreen" title="Strategy risks" onClick={() => { onNavigateTab(1); scrollToRiskEngine(); }}><ExpandIcon /></button>
           </div>
           {vaultId === 'earn-eth-lido-mellow' ? (<>
-            <div className="score-card-row"><span className="score-card-label">Financial risk:</span><span className="score-card-value score-green">A+</span></div>
-            <div className="score-card-row"><span className="score-card-label">Protocol risk:</span><span className="score-card-value score-green">A+</span></div>
-            <div className="score-card-row"><span className="score-card-label">Curator risk:</span><span className="score-card-value score-green">A+</span></div>
+            <StatusTimeline label="Financial risk" current="A+" currentColor="#34D399"
+              segments={generateTimeline('A+', [{ score: 'B+', date: 'Dec 10, 2025', color: 'yellow' }, { score: 'A', date: 'Jan 20, 2026', color: 'green' }, { score: 'A+', date: 'Mar 1, 2026', color: 'green' }])} />
+            <StatusTimeline label="Protocol risk" current="A+" currentColor="#34D399"
+              segments={generateTimeline('A+', [{ score: 'A+', date: 'Jan 1, 2026', color: 'green' }])} />
+            <StatusTimeline label="Curator risk" current="A+" currentColor="#34D399"
+              segments={generateTimeline('A+', [{ score: 'A', date: 'Feb 10, 2026', color: 'yellow' }, { score: 'A+', date: 'Mar 15, 2026', color: 'green' }])} />
           </>) : (<>
-            <div className="score-card-row"><span className="score-card-label">Financial risk:</span><span className="score-card-value">&mdash;</span></div>
-            <div className="score-card-row"><span className="score-card-label">Protocol risk:</span><span className="score-card-value">&mdash;</span></div>
-            <div className="score-card-row"><span className="score-card-label">Curator risk:</span><span className="score-card-value">&mdash;</span></div>
+            <StatusTimeline label="Financial risk" current="—" segments={generateTimeline('—')} />
+            <StatusTimeline label="Protocol risk" current="—" segments={generateTimeline('—')} />
+            <StatusTimeline label="Curator risk" current="—" segments={generateTimeline('—')} />
           </>)}
         </div>
       </div>
@@ -370,17 +374,102 @@ function MiddleSection({ onNavigateTab, vaultId }: { onNavigateTab: (tab: number
   );
 }
 
-const PLATFORM_SCORES: Record<string, { label: string; score: string; scoreColor: string; weight: string }[]> = {
+// StatusPage timeline bar types
+type StatusColor = 'green' | 'yellow' | 'red' | 'blue' | 'gray';
+interface StatusSegment {
+  color: StatusColor;
+  score?: string;
+  date?: string;
+}
+
+function generateTimeline(current: string, history?: { score: string; date: string; color: StatusColor }[]): StatusSegment[] {
+  // Generate ~60 segments (like 60 days)
+  const segments: StatusSegment[] = [];
+  if (history && history.length > 0) {
+    // Fill with mostly green, inject history changes
+    for (let i = 0; i < 60; i++) {
+      const hi = history.find((_, idx) => Math.floor(60 - (idx + 1) * (60 / history.length)) === i);
+      if (hi) {
+        segments.push({ color: hi.color, score: hi.score, date: hi.date });
+      } else {
+        segments.push({ color: 'green' });
+      }
+    }
+  } else {
+    for (let i = 0; i < 60; i++) segments.push({ color: 'green' });
+  }
+  return segments;
+}
+
+const COLOR_MAP: Record<StatusColor, string> = {
+  green: '#34D399', yellow: '#FBBF24', red: '#F87171', blue: '#60A5FA', gray: 'rgba(255,255,255,0.15)',
+};
+
+// Generate date labels for each segment (roughly 60 days back)
+function segmentDate(idx: number, total: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - (total - idx));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function StatusTimeline({ label, current, currentColor, segments, note }: {
+  label: string; current: string; currentColor?: string; segments: StatusSegment[]; note?: string;
+}) {
+  const [hover, setHover] = useState<{ idx: number; seg: StatusSegment } | null>(null);
+
+  return (
+    <div className="status-timeline">
+      <span className="status-tl-label">{label}</span>
+      <div className="status-tl-bar" onMouseLeave={() => setHover(null)}>
+        {segments.map((seg, i) => (
+          <div
+            key={i}
+            className="status-tl-seg"
+            style={{ backgroundColor: COLOR_MAP[seg.color] }}
+            onMouseEnter={() => setHover({ idx: i, seg })}
+          />
+        ))}
+        {hover && (
+          <div className="status-tl-tooltip" style={{ left: `${(hover.idx / segments.length) * 100}%` }}>
+            <span className="status-tl-tt-score">{hover.seg.score || current}</span>
+            <span className="status-tl-tt-date">{hover.seg.date || segmentDate(hover.idx, segments.length)}</span>
+          </div>
+        )}
+      </div>
+      <div className="status-tl-right">
+        <span className="status-tl-current" style={{ color: currentColor || '#34D399' }}>{current}</span>
+        {note && <span className="status-tl-note">{note}</span>}
+      </div>
+    </div>
+  );
+}
+
+interface PlatformScoreEntry {
+  label: string; score: string; scoreColor: string; weight: string;
+  history: { score: string; date: string; color: StatusColor }[];
+}
+
+const PLATFORM_SCORES: Record<string, PlatformScoreEntry[]> = {
   'earn-eth-lido-mellow': [
-    { label: 'Lido v3', score: 'A+', scoreColor: '#34D399', weight: '1' },
-    { label: 'Mellow', score: 'A', scoreColor: '#34D399', weight: '1' },
-    { label: 'Veda', score: 'B+', scoreColor: '#FBBF24', weight: '~ 0' },
+    { label: 'Lido v3', score: 'A+', scoreColor: '#34D399', weight: '1', history: [
+      { score: 'A', date: 'Jan 15, 2026', color: 'yellow' },
+      { score: 'A+', date: 'Feb 2, 2026', color: 'green' },
+    ]},
+    { label: 'Mellow', score: 'A', scoreColor: '#34D399', weight: '1', history: [
+      { score: 'B+', date: 'Dec 20, 2025', color: 'yellow' },
+      { score: 'A-', date: 'Jan 28, 2026', color: 'green' },
+      { score: 'A', date: 'Mar 5, 2026', color: 'green' },
+    ]},
+    { label: 'Veda', score: 'B+', scoreColor: '#FBBF24', weight: '~ 0', history: [
+      { score: 'B', date: 'Jan 10, 2026', color: 'yellow' },
+      { score: 'B+', date: 'Feb 18, 2026', color: 'yellow' },
+    ]},
   ],
 };
 
-const DEFAULT_PLATFORM_SCORES = [
-  { label: '—', score: '', scoreColor: '', weight: '' },
-  { label: '—', score: '', scoreColor: '', weight: '' },
+const DEFAULT_PLATFORM_SCORES: PlatformScoreEntry[] = [
+  { label: '—', score: '', scoreColor: '', weight: '', history: [] },
+  { label: '—', score: '', scoreColor: '', weight: '', history: [] },
 ];
 
 function PlatformScoresCard({ onNavigate, vaultId }: { onNavigate: () => void; vaultId: string }) {
@@ -406,22 +495,23 @@ function PlatformScoresCard({ onNavigate, vaultId }: { onNavigate: () => void; v
       </div>
       <div className="score-card-body-fixed">
         {visible.map((row, i) => (
-          <div className="score-card-row" key={page * pageSize + i}>
-            <span className="score-card-label">{row.label}</span>
-            <span className="score-card-right">
-              {row.score && <span className="score-card-value" style={{ color: row.scoreColor }}>{row.score}</span>}
-              {row.weight && <span className="score-card-weight">w={row.weight}</span>}
-            </span>
-          </div>
+          <StatusTimeline
+            key={page * pageSize + i}
+            label={row.label}
+            current={row.score}
+            currentColor={row.scoreColor}
+            segments={generateTimeline(row.score, row.history)}
+            note={row.weight ? `w=${row.weight}` : undefined}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-const RISK_TABS = ['Risk Map', 'Strategy risks', 'NAV administration', 'Platform risks', 'Events stream'] as const;
+const RISK_TABS = ['Risk tree', 'Strategy risks', 'NAV administration', 'Platform risks', 'Events stream'] as const;
 
-function RiskEngine({ activeTab, onTabChange, vaultId }: { activeTab: number; onTabChange: (t: number) => void; vaultId: string }) {
+function RiskEngine({ activeTab, onTabChange, vaultId, tvlUsd }: { activeTab: number; onTabChange: (t: number) => void; vaultId: string; tvlUsd: number }) {
   return (
     <div className="profile-section">
       <h2 className="section-title">Risk engine</h2>
@@ -438,7 +528,7 @@ function RiskEngine({ activeTab, onTabChange, vaultId }: { activeTab: number; on
       </div>
       <div className="risk-tab-content">
         {activeTab === 0 && vaultId === 'earn-eth-lido-mellow' ? (
-          <RiskMapLazy />
+          <RiskMapLazy tvlUsd={tvlUsd} />
         ) : (
           <span className="placeholder-text">{RISK_TABS[activeTab]} — coming soon</span>
         )}
@@ -447,11 +537,11 @@ function RiskEngine({ activeTab, onTabChange, vaultId }: { activeTab: number; on
   );
 }
 
-function RiskMapLazy() {
-  const [Comp, setComp] = useState<React.ComponentType | null>(null);
+function RiskMapLazy({ tvlUsd }: { tvlUsd: number }) {
+  const [Comp, setComp] = useState<React.ComponentType<{ tvlUsd: number }> | null>(null);
   useEffect(() => {
     import('./RiskMap').then((m) => setComp(() => m.RiskMap));
   }, []);
-  if (!Comp) return <span className="placeholder-text">Loading Risk Map...</span>;
-  return <Comp />;
+  if (!Comp) return <span className="placeholder-text">Loading Risk tree...</span>;
+  return <Comp tvlUsd={tvlUsd} />;
 }
