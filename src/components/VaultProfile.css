@@ -180,6 +180,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-bottom: 32px;
+  align-items: stretch;
 }
 
 .middle-left {
@@ -194,6 +195,16 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Make left column match right column height exactly */
+.middle-grid {
+  grid-template-rows: 1fr;
+}
+
+.middle-grid > .middle-left,
+.middle-grid > .middle-right {
+  min-height: 0;
 }
 
 /* Events card */
@@ -461,7 +472,7 @@
 }
 
 .score-card-body-fixed {
-  min-height: 66px;
+  min-height: 56px;
 }
 
 .score-card-row {
@@ -504,6 +515,105 @@
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-weight: 500;
+}
+
+/* StatusPage timeline rows — compact inline */
+.status-timeline {
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-timeline:last-child {
+  border-bottom: none;
+}
+
+.status-tl-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-tl-bar {
+  display: flex;
+  gap: 1px;
+  height: 10px;
+  border-radius: 2px;
+  overflow: visible;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-tl-seg {
+  flex: 1;
+  min-width: 0;
+  border-radius: 1px;
+  transition: opacity 0.1s ease;
+  cursor: pointer;
+}
+
+.status-tl-seg:hover {
+  opacity: 0.7;
+  transform: scaleY(1.4);
+}
+
+.status-tl-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-elevated);
+}
+
+.status-tl-tt-score {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.status-tl-tt-date {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.status-tl-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 50px;
+  justify-content: flex-end;
+}
+
+.status-tl-current {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.status-tl-note {
+  font-size: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 
 /* Risk engine tabs */
@@ -549,7 +659,9 @@
   box-shadow: var(--shadow-card);
 }
 
-.risk-tab-content:has(.risk-map) {
+.risk-tab-content:has(.risk-map-tree) {
   padding: 0;
-  display: block;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
 }
