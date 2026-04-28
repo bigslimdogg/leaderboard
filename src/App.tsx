@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { Leaderboard } from './components/Leaderboard';
 import { VaultProfile } from './components/VaultProfile';
 import { VaultSelector } from './components/VaultSelector';
+import { RevenueReconciliation } from './components/RevenueReconciliation';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<Leaderboard />} />
             <Route path="/vault" element={<VaultSelector />} />
             <Route path="/vault/:id" element={<VaultProfile />} />
+            <Route path="/revenue" element={<RevenueReconciliation />} />
           </Routes>
         </main>
       </div>
