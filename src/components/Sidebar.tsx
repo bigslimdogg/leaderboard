@@ -52,11 +52,12 @@ export function Sidebar() {
   const navigate = useNavigate();
   const isVaultProfile = location.pathname.startsWith('/vault/');
   const isLeaderboard = location.pathname === '/';
+  const isRevenue = location.pathname === '/revenue';
 
   const mainItems = [
     { id: 'leaderboard', label: 'Vaults Leaderboard', icon: <BarChartIcon />, active: isLeaderboard, onClick: () => navigate('/') },
     { id: 'vault-risk', label: 'Vault Risk Profile', icon: <ShieldIcon />, active: isVaultProfile || location.pathname === '/vault', onClick: () => navigate('/vault') },
-    { id: 'nav-risk-wp', label: 'NAV & Risk WP', icon: <ClipboardIcon />, active: false, disabled: true },
+    { id: 'revenue', label: 'Revenue Reconciliation', icon: <ClipboardIcon />, active: isRevenue, onClick: () => navigate('/revenue') },
     { id: 'pools', label: 'Pools Discovery', icon: <SearchIcon />, active: false, disabled: true },
   ];
 
